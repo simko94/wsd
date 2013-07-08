@@ -1,0 +1,87 @@
+#! /bin/sh
+### BEGIN INIT INFO
+# Provides:          Wetterstation
+# Required-Start:    $remote_fs $mysqld
+# Required-Stop:     $remote_fs $mysqld
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Wetterstation Daemon Init Script
+# Description:       This script will manage the Wetterstation-Daemon
+### END INIT INFO
+
+
+# Testen, ob die ausfuehrbare Datei existiert
+test -f /usr/bin/Wetterstation || exit 0
+# Pruefen, ob der Benutzer, welcher dieses Skript aufgerufen hat,
+# Superuser-Rechte besitzt
+# Root hat die User-ID 0
+# Wenn der aufrufende Benutzer keine Root-Rechte hat, terminiert das Skript
+if [ `id -u` != "0" ]
+then
+	echo "You must run this script as a super-user"
+	exit 0	
+fi
+# Falls das Skript bis hier nicht terminiert hat,
+# handelt es sich beim aufrufenden Benutzer um den Superuser
+# und die moeglichen Parameter werden behandelt
+# Startet den Dienst
+wetter_start(){
+	echo "Starting Wetterstation daemon"
+	# einige Sekunden warten, bis der Datenbankserver bereit ist zu antworten
+	/bin/sleep 3 && /usr/bin/Wetterstation
+	echo `pidof Wetterstation` > /var/run/Wetterstation.pid
+}
+
+# Stoppt den Dienst
+wetter_stop(){
+	if [ -f /var/run/Wetterstation.pid ]
+	then 
+		echo "Stopping Wetterstation daemon"
+		kill -2 `cat /var/run/Wetterstation.pid`
+		rm /var/run/Wetterstation.pid
+	else
+		echo "Wetterstation daemon is not running"
+	fi
+}
+
+# Gibt Statusinformationen ueber den Dienst aus
+wetter_status(){
+	if [ -f /var/run/Wetterstation.pid ]
+	then 
+		echo "Service Wetterstation is running with PID `cat /var/run/Wetterstation.pid`"
+	else
+		echo "Service Wetterstation is not running"
+	fi
+}
+
+# Gibt das Verwendungsmuster des Skripts aus
+wetter_usage(){
+	echo "Usage: $0 start | stop | restart | status"
+	exit 1
+}
+
+case $1 in
+	# Dienst starten
+	start)
+		wetter_start
+		;;
+	# Dienst stoppen
+	stop)
+		wetter_stop
+		;;
+	# Dienst neu starten
+	restart)
+		wetter_stop
+		wetter_start		
+		;;
+	# Status ausgeben
+	status)
+		wetter_status
+		;;
+	# Aufruf-Syntax ausgeben
+	*)
+		wetter_usage
+		;;
+esac
+
+
